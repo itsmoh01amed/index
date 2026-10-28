@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Quest: Trivia Odyssey</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        heading: ['Fredoka', 'sans-serif'],
+                        body: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            purple: '#6C5CE7',
+                            pink: '#FD79A8',
+                            yellow: '#FDCB6E',
+                            cyan: '#00CEC9',
+                            dark: '#0F172A',
+                            card: '#1E293B'
+                        }
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-short': 'bounce 0.5s ease-in-out 1',
+                        'float': 'float 3s ease-in-out infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-8px)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0B0F19;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(108, 92, 231, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(253, 121, 168, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-option {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-option:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(108, 92, 231, 0.4);
+        }
+        .btn-option:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .glow-purple {
+            box-shadow: 0 0 25px -5px rgba(108, 92, 231, 0.5);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(108, 92, 231, 0.5); border-radius: 3px; }
+    </style>
+</head>
+<body class="font-body text-white min-h-screen flex flex-col justify-between overflow-x-hidden select-none">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full max-w-4xl mx-auto p-4 flex justify-between items-center z-10">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="game.showHome()">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-pink flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-brand-purple/30 animate-float">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <span class="font-heading text-2xl font-bold tracking-wide bg-gradient-to-r from-white via-purple-200 to-brand-pink bg-clip-text text-transparent">
+                BrainQuest
+            </span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="sound-btn" onclick="game.toggleSound()" class="w-10 h-10 rounded-xl glass-panel hover:bg-slate-700/50 flex items-center justify-center transition text-slate-300 hover:text-white" title="Toggle Sound">
+                <i class="fa-solid fa-volume-high text-lg"></i>
+            </button>
+            <button onclick="game.showLeaderboard()" class="px-3 py-2 rounded-xl glass-panel hover:bg-slate-700/50 flex items-center gap-2 transition text-slate-300 hover:text-white font-medium text-sm">
+                <i class="fa-solid fa-trophy text-brand-yellow"></i>
+                <span class="hidden sm:inline">Leaderboard</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-3xl mx-auto px-4 py-2 flex-grow flex flex-col justify-center">
+
+        <!-- SCREEN 1: CATEGORY SELECTION (HOME) -->
+        <section id="screen-home" class="space-y-6 animate-fade-in">
+            <div class="text-center space-y-2">
+                <h1 class="font-heading text-4xl sm:text-5xl font-bold text-white tracking-tight">
+                    Ready to Test Your <span class="bg-gradient-to-r from-brand-cyan to-brand-purple bg-clip-text text-transparent">Wits?</span>
+                </h1>
+                <p class="text-slate-400 text-sm sm:text-base max-w-md mx-auto">Select a category below to start your quiz adventure and climb the global rankings!</p>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <!-- Pop Culture -->
+                <div onclick="game.startCategory('pop')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:border-brand-purple/80 hover:bg-slate-800/80 transition-all duration-300 group flex items-center gap-4 relative overflow-hidden glow-purple">
+                    <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition"></div>
+                    <div class="w-14 h-14 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-2xl group-hover:scale-110 transition duration-300">
+                        <i class="fa-solid fa-film"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading text-xl font-semibold text-white group-hover:text-brand-purple transition">Pop Culture</h3>
+                        <p class="text-xs text-slate-400 mt-1">Movies, music, celebs & trends</p>
+                    </div>
+                </div>
+
+                <!-- Science & Nature -->
+                <div onclick="game.startCategory('science')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:border-brand-cyan/80 hover:bg-slate-800/80 transition-all duration-300 group flex items-center gap-4 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-teal-500/10 rounded-full blur-xl group-hover:bg-teal-500/20 transition"></div>
+                    <div class="w-14 h-14 rounded-xl bg-teal-500/20 text-brand-cyan flex items-center justify-center text-2xl group-hover:scale-110 transition duration-300">
+                        <i class="fa-solid fa-flask"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading text-xl font-semibold text-white group-hover:text-brand-cyan transition">Crazy Science</h3>
+                        <p class="text-xs text-slate-400 mt-1">Space, physics & weird nature</p>
+                    </div>
+                </div>
+
+                <!-- Mind Benders -->
+                <div onclick="game.startCategory('mind')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:border-brand-pink/80 hover:bg-slate-800/80 transition-all duration-300 group flex items-center gap-4 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-pink-500/10 rounded-full blur-xl group-hover:bg-pink-500/20 transition"></div>
+                    <div class="w-14 h-14 rounded-xl bg-pink-500/20 text-brand-pink flex items-center justify-center text-2xl group-hover:scale-110 transition duration-300">
+                        <i class="fa-solid fa-puzzle-piece"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading text-xl font-semibold text-white group-hover:text-brand-pink transition">Mind Benders</h3>
+                        <p class="text-xs text-slate-400 mt-1">Tricky logic & brain teasers</p>
+                    </div>
+                </div>
+
+                <!-- Fun Riddles -->
+                <div onclick="game.startCategory('riddles')" class="glass-panel p-5 rounded-2xl cursor-pointer hover:border-brand-yellow/80 hover:bg-slate-800/80 transition-all duration-300 group flex items-center gap-4 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-yellow-500/10 rounded-full blur-xl group-hover:bg-yellow-500/20 transition"></div>
+                    <div class="w-14 h-14 rounded-xl bg-yellow-500/20 text-brand-yellow flex items-center justify-center text-2xl group-hover:scale-110 transition duration-300">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-heading text-xl font-semibold text-white group-hover:text-brand-yellow transition">Fun Riddles</h3>
+                        <p class="text-xs text-slate-400 mt-1">Clever puzzles to test lateral thinking</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats & Settings Preview -->
+            <div class="glass-panel rounded-2xl p-4 flex justify-around items-center text-center text-xs text-slate-400 border-t border-slate-700/50">
+                <div>
+                    <span class="block text-lg font-bold text-white font-heading" id="total-played-stat">0</span>
+                    Games Played
+                </div>
+                <div class="w-px h-8 bg-slate-700"></div>
+                <div>
+                    <span class="block text-lg font-bold text-brand-yellow font-heading" id="top-score-stat">0</span>
+                    Highest Score
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: GAMEPLAY -->
+        <section id="screen-game" class="hidden space-y-4">
+            <!-- Game HUD (Timer, Score, Streak) -->
+            <div class="flex items-center justify-between glass-panel p-3 sm:p-4 rounded-2xl">
+                <!-- Question Counter -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400 uppercase font-semibold">Q:</span>
+                    <span id="question-number" class="font-heading font-bold text-lg text-white">1/5</span>
+                </div>
+
+                <!-- Timer Bar & Text -->
+                <div class="flex items-center gap-3 flex-1 max-w-xs mx-4">
+                    <i class="fa-solid fa-clock text-brand-cyan text-sm"></i>
+                    <div class="w-full bg-slate-700/60 rounded-full h-2.5 overflow-hidden p-0.5 border border-slate-600/30">
+                        <div id="timer-bar" class="bg-gradient-to-r from-brand-cyan to-brand-purple h-full rounded-full transition-all duration-1000 w-full"></div>
+                    </div>
+                    <span id="timer-text" class="font-heading font-bold text-sm text-slate-200 min-w-[20px]">15</span>
+                </div>
+
+                <!-- Score -->
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-star text-brand-yellow text-sm"></i>
+                    <span id="score-text" class="font-heading font-bold text-lg text-brand-yellow">0</span>
+                </div>
+            </div>
+
+            <!-- Streak & Multiplier Header -->
+            <div class="flex justify-between items-center px-1">
+                <div id="streak-container" class="opacity-0 transition-opacity flex items-center gap-1 text-xs font-bold text-orange-400 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20">
+                    <i class="fa-solid fa-fire animate-bounce-short"></i>
+                    <span id="streak-text">2x Streak!</span>
+                </div>
+                <div id="multiplier-badge" class="hidden text-xs font-bold text-brand-pink bg-pink-500/10 px-2.5 py-1 rounded-full border border-pink-500/20">
+                    2x Points Active!
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="glass-panel p-6 rounded-3xl space-y-6 relative overflow-hidden border border-slate-700/60 shadow-xl">
+                <p id="question-text" class="font-heading text-lg sm:text-2xl font-bold text-center text-white leading-relaxed min-h-[60px] flex items-center justify-center">
+                    Loading Question...
+                </p>
+
+                <!-- Lifelines / Powerups -->
+                <div class="flex justify-center gap-3 pt-2">
+                    <button id="powerup-5050" onclick="game.usePowerup('5050')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-300 hover:text-white transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-scissors text-brand-purple"></i> 50:50
+                    </button>
+                    <button id="powerup-time" onclick="game.usePowerup('time')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-300 hover:text-white transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-hourglass-plus text-brand-cyan"></i> +10s
+                    </button>
+                    <button id="powerup-double" onclick="game.usePowerup('double')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-semibold text-slate-300 hover:text-white transition flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-bolt text-brand-pink"></i> 2x Score
+                    </button>
+                </div>
+
+                <!-- Answer Choices -->
+                <div id="answers-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <!-- Buttons generated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: RESULTS -->
+        <section id="screen-result" class="hidden space-y-6 text-center animate-fade-in">
+            <div class="glass-panel p-8 rounded-3xl space-y-6 max-w-lg mx-auto relative overflow-hidden border border-slate-700/60 shadow-2xl">
+                <!-- Decorative Glow -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 bg-brand-purple/20 rounded-full blur-3xl -z-10"></div>
+
+                <div class="inline-block p-4 rounded-full bg-slate-800/80 border border-slate-700 shadow-inner">
+                    <i id="result-icon" class="fa-solid fa-trophy text-5xl text-brand-yellow"></i>
+                </div>
+
+                <div class="space-y-1">
+                    <h2 id="result-title" class="font-heading text-3xl font-bold text-white">Quiz Completed!</h2>
+                    <p id="result-subtitle" class="text-sm text-slate-400">Great effort on this round!</p>
+                </div>
+
+                <!-- Score Breakdown Box -->
+                <div class="bg-slate-900/60 rounded-2xl p-4 grid grid-cols-3 gap-2 border border-slate-800 text-center">
+                    <div>
+                        <span class="text-xs text-slate-400 block font-medium">Final Score</span>
+                        <span id="result-score" class="font-heading text-2xl font-bold text-brand-yellow">0</span>
+                    </div>
+                    <div class="border-x border-slate-800">
+                        <span class="text-xs text-slate-400 block font-medium">Accuracy</span>
+                        <span id="result-accuracy" class="font-heading text-2xl font-bold text-brand-cyan">0%</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-slate-400 block font-medium">Best Streak</span>
+                        <span id="result-streak" class="font-heading text-2xl font-bold text-brand-pink">0</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button onclick="game.restartQuiz()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-brand-purple to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-heading font-semibold shadow-lg shadow-purple-900/40 transition active:scale-95">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> Play Again
+                    </button>
+                    <button onclick="game.showHome()" class="py-3 px-5 rounded-xl glass-panel hover:bg-slate-700/60 text-slate-300 hover:text-white font-heading font-semibold transition">
+                        <i class="fa-solid fa-house mr-1"></i> Home
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: LEADERBOARD -->
+        <section id="screen-leaderboard" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="font-heading text-2xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-brand-yellow"></i> Hall of Fame
+                </h2>
+                <button onclick="game.showHome()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Categories
+                </button>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-4 sm:p-6 space-y-3">
+                <div id="leaderboard-list" class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                    <!-- Dynamic leaderboard rows -->
+                </div>
+
+                <div class="pt-3 border-t border-slate-700/50 flex justify-between items-center text-xs text-slate-400">
+                    <span>Scores stored locally in browser</span>
+                    <button onclick="game.clearLeaderboard()" class="hover:text-red-400 transition">Clear Data</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-4xl mx-auto p-4 text-center text-xs text-slate-500">
+        Created for pure trivia fun • BrainQuest Odyssey
+    </footer>
+
+    <!-- AUDIO SYNTHESIZER (Web Audio API - No external mp3 files required) -->
+    <script>
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                const osc1 = this.ctx.createOscillator();
+                const osc2 = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc1.type = 'triangle';
+                osc2.type = 'sine';
+
+                osc1.frequency.setValueAtTime(523.25, now); // C5
+                osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                osc1.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+                osc1.frequency.exponentialRampToValueAtTime(1046.50, now + 0.3); // C6
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.4);
+                osc2.stop(now + 0.4);
+            }
+
+            playWrong() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.25);
+
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+
+            playTick() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+
+            playPowerup() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(900, now + 0.25);
+
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+        }
+
+        const sound = new SoundEngine();
+    </script>
+
+    <!-- MAIN GAME LOGIC -->
+    <script>
+        // Question Database
+        const QUESTION_BANK = {
+            pop: [
+                {
+                    q: "Which movie won the Academy Award for Best Picture in 2020, making history as the first foreign-language film to win?",
+                    options: ["1917", "Parasite", "Once Upon a Time in Hollywood", "Jojo Rabbit"],
+                    correct: 1
+                },
+                {
+                    q: "What is the highest-grossing film of all time (unadjusted for inflation)?",
+                    options: ["Avengers: Endgame", "Titanic", "Avatar", "Star Wars: The Force Awakens"],
+                    correct: 2
+                },
+                {
+                    q: "Which pop star's real name is Stefani Joanne Angelina Germanotta?",
+                    options: ["Katy Perry", "Lady Gaga", "Billie Eilish", "Dua Lipa"],
+                    correct: 1
+                },
+                {
+                    q: "In Netflix's 'Stranger Things', what is the name of the alternate dimension?",
+                    options: ["The Nether", "The Shadow Realm", "The Upside Down", "The Dark Zone"],
+                    correct: 2
+                },
+                {
+                    q: "Which artist painted the famous artwork 'The Starry Night'?",
+                    options: ["Pablo Picasso", "Claude Monet", "Vincent van Gogh", "Salvador Dalí"],
+                    correct: 2
+                }
+            ],
+            science: [
+                {
+                    q: "What element does the chemical symbol 'Au' represent on the periodic table?",
+                    options: ["Silver", "Gold", "Aluminum", "Copper"],
+                    correct: 1
+                },
+                {
+                    q: "Approximately how long does light from the Sun take to reach Planet Earth?",
+                    options: ["8 seconds", "8 minutes", "8 hours", "Instantaneous"],
+                    correct: 1
+                },
+                {
+                    q: "What is the hardest naturally occurring substance on Earth?",
+                    options: ["Titanium", "Diamond", "Graphene", "Quartz"],
+                    correct: 1
+                },
+                {
+                    q: "Which planet in our solar system has the most moons?",
+                    options: ["Jupiter", "Saturn", "Uranus", "Neptune"],
+                    correct: 1
+                },
+                {
+                    q: "What type of main sequence star is our Sun classified as?",
+                    options: ["Red Dwarf", "Blue Giant", "Yellow Dwarf", "White Dwarf"],
+                    correct: 2
+                }
+            ],
+            mind: [
+                {
+                    q: "If a electric train is traveling south at 60 mph, which direction does the smoke blow?",
+                    options: ["North", "South", "East", "Electric trains don't produce smoke!"],
+                    correct: 3
+                },
+                {
+                    q: "A farmer has 17 sheep and all but 9 die. How many sheep are left alive?",
+                    options: ["8", "9", "0", "17"],
+                    correct: 1
+                },
+                {
+                    q: "Some months have 31 days, others have 30. How many months have 28 days?",
+                    options: ["1 month (February)", "6 months", "All 12 months", "Depends on leap year"],
+                    correct: 2
+                },
+                {
+                    q: "If you race in a marathon and pass the person in 2nd place, what position are you in now?",
+                    options: ["1st place", "2nd place", "3rd place", "Last place"],
+                    correct: 1
+                },
+                {
+                    q: "How many times can you subtract 5 from the number 25?",
+                    options: ["5 times", "4 times", "Only once", "Infinite times"],
+                    correct: 2
+                }
+            ],
+            riddles: [
+                {
+                    q: "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?",
+                    options: ["A Cloud", "An Echo", "A Shadow", "A Whistle"],
+                    correct: 1
+                },
+                {
+                    q: "The more of me you take, the more you leave behind. What am I?",
+                    options: ["Footsteps", "Memories", "Time", "Money"],
+                    correct: 0
+                },
+                {
+                    q: "What has key, but no locks; space, but no room; and you can enter, but can't go inside?",
+                    options: ["A Map", "A Keyboard", "A House", "A Book"],
+                    correct: 1
+                },
+                {
+                    q: "What gets wetter the more it dries?",
+                    options: ["A Sponge", "A Cloud", "A Towel", "Ice"],
+                    correct: 2
+                },
+                {
+                    q: "What belongs to you, but other people use it far more than you do?",
+                    options: ["Your Money", "Your Name", "Your Phone", "Your House"],
+                    correct: 1
+                }
+            ]
+        };
+
+        class TriviaGame {
+            constructor() {
+                this.currentCategory = null;
+                this.questions = [];
+                this.currentIndex = 0;
+                this.score = 0;
+                this.streak = 0;
+                this.maxStreak = 0;
+                this.correctCount = 0;
+                
+                // Timer variables
+                this.timeLeft = 15;
+                this.timerInterval = null;
+                this.maxTime = 15;
+
+                // Powerups state
+                this.powerups = {
+                    '5050': true,
+                    'time': true,
+                    'double': true
+                };
+                this.doublePointsActive = false;
+
+                // Load Stats from LocalStorage
+                this.stats = JSON.parse(localStorage.getItem('bq_stats')) || {
+                    gamesPlayed: 0,
+                    highScore: 0,
+                    leaderboard: []
+                };
+
+                this.updateHomeStats();
+            }
+
+            // Navigation helpers
+            showScreen(screenId) {
+                ['screen-home', 'screen-game', 'screen-result', 'screen-leaderboard'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+                document.getElementById(screenId).classList.remove('hidden');
+            }
+
+            showHome() {
+                this.stopTimer();
+                this.updateHomeStats();
+                this.showScreen('screen-home');
+            }
+
+            toggleSound() {
+                sound.enabled = !sound.enabled;
+                const btn = document.getElementById('sound-btn');
+                btn.innerHTML = sound.enabled 
+                    ? '<i class="fa-solid fa-volume-high text-lg"></i>' 
+                    : '<i class="fa-solid fa-volume-xmark text-lg text-red-400"></i>';
+            }
+
+            updateHomeStats() {
+                document.getElementById('total-played-stat').innerText = this.stats.gamesPlayed;
+                document.getElementById('top-score-stat').innerText = this.stats.highScore;
+            }
+
+            // Game Setup
+            startCategory(catKey) {
+                this.currentCategory = catKey;
+                // Clone & Shuffle Questions
+                this.questions = [...QUESTION_BANK[catKey]].sort(() => Math.random() - 0.5);
+                this.currentIndex = 0;
+                this.score = 0;
+                this.streak = 0;
+                this.maxStreak = 0;
+                this.correctCount = 0;
+
+                // Reset Powerups
+                this.powerups = { '5050': true, 'time': true, 'double': true };
+                this.resetPowerupUI();
+
+                this.showScreen('screen-game');
+                this.loadQuestion();
+            }
+
+            resetPowerupUI() {
+                ['5050', 'time', 'double'].forEach(p => {
+                    const btn = document.getElementById(`powerup-${p}`);
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-40', 'cursor-not-allowed');
+                });
+                this.doublePointsActive = false;
+                document.getElementById('multiplier-badge').classList.add('hidden');
+            }
+
+            loadQuestion() {
+                if (this.currentIndex >= this.questions.length) {
+                    this.endGame();
+                    return;
+                }
+
+                const qData = this.questions[this.currentIndex];
+                
+                // Update HUD
+                document.getElementById('question-number').innerText = `${this.currentIndex + 1}/${this.questions.length}`;
+                document.getElementById('score-text').innerText = this.score;
+                document.getElementById('question-text').innerText = qData.q;
+
+                // Render Answer Buttons
+                const container = document.getElementById('answers-container');
+                container.innerHTML = '';
+
+                qData.options.forEach((optText, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-option glass-panel hover:border-brand-purple/60 p-4 rounded-2xl text-left font-semibold text-slate-200 hover:text-white flex items-center justify-between group text-sm sm:text-base border border-slate-700/60';
+                    btn.dataset.index = idx;
+                    btn.onclick = () => this.handleAnswer(idx);
+
+                    btn.innerHTML = `
+                        <span class="flex items-center gap-3">
+                            <span class="w-7 h-7 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 group-hover:text-brand-purple group-hover:border-brand-purple transition">
+                                ${String.fromCharCode(65 + idx)}
+                            </span>
+                            <span>${optText}</span>
+                        </span>
+                        <i class="fa-solid fa-circle-check opacity-0 group-hover:opacity-40 transition text-brand-purple"></i>
+                    `;
+                    container.appendChild(btn);
+                });
+
+                // Reset double points indicator if it was used for previous question
+                if (this.doublePointsActive) {
+                    this.doublePointsActive = false;
+                    document.getElementById('multiplier-badge').classList.add('hidden');
+                }
+
+                // Reset Timer
+                this.startTimer();
+            }
+
+            startTimer() {
+                this.stopTimer();
+                this.timeLeft = this.maxTime;
+                this.updateTimerUI();
+
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateTimerUI();
+
+                    if (this.timeLeft <= 3 && this.timeLeft > 0) {
+                        sound.playTick();
+                    }
+
+                    if (this.timeLeft <= 0) {
+                        this.stopTimer();
+                        this.handleTimeOut();
+                    }
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.timerInterval) clearInterval(this.timerInterval);
+            }
+
+            updateTimerUI() {
+                const bar = document.getElementById('timer-bar');
+                const text = document.getElementById('timer-text');
+                
+                text.innerText = this.timeLeft;
+                const percentage = (this.timeLeft / this.maxTime) * 100;
+                bar.style.width = `${percentage}%`;
+
+                // Color tint changes when low time
+                if (this.timeLeft <= 4) {
+                    bar.className = "bg-gradient-to-r from-red-500 to-orange-500 h-full rounded-full transition-all duration-1000 w-full animate-pulse-fast";
+                } else {
+                    bar.className = "bg-gradient-to-r from-brand-cyan to-brand-purple h-full rounded-full transition-all duration-1000 w-full";
+                }
+            }
+
+            usePowerup(type) {
+                if (!this.powerups[type]) return;
+
+                this.powerups[type] = false;
+                const btn = document.getElementById(`powerup-${type}`);
+                btn.disabled = true;
+                btn.classList.add('opacity-40', 'cursor-not-allowed');
+
+                sound.playPowerup();
+
+                const qData = this.questions[this.currentIndex];
+
+                if (type === '5050') {
+                    // Disable 2 wrong options
+                    const container = document.getElementById('answers-container');
+                    const buttons = Array.from(container.children);
+                    
+                    let wrongIndices = buttons
+                        .map((_, idx) => idx)
+                        .filter(idx => idx !== qData.correct);
+                    
+                    // Shuffle wrong options and pick 2 to disable
+                    wrongIndices.sort(() => Math.random() - 0.5);
+                    const toDisable = wrongIndices.slice(0, 2);
+
+                    toDisable.forEach(idx => {
+                        buttons[idx].disabled = true;
+                        buttons[idx].classList.add('opacity-30', 'line-through', 'pointer-events-none');
+                    });
+                } else if (type === 'time') {
+                    // Add +10 seconds
+                    this.timeLeft = Math.min(this.timeLeft + 10, 25);
+                    this.updateTimerUI();
+                } else if (type === 'double') {
+                    // Enable 2x multiplier for this question
+                    this.doublePointsActive = true;
+                    document.getElementById('multiplier-badge').classList.remove('hidden');
+                }
+            }
+
+            handleAnswer(selectedIndex) {
+                this.stopTimer();
+                const qData = this.questions[this.currentIndex];
+                const container = document.getElementById('answers-container');
+                const buttons = container.querySelectorAll('button');
+
+                // Disable all options
+                buttons.forEach(btn => btn.disabled = true);
+
+                if (selectedIndex === qData.correct) {
+                    // CORRECT ANSWER
+                    sound.playCorrect();
+                    buttons[selectedIndex].classList.remove('glass-panel');
+                    buttons[selectedIndex].classList.add('bg-emerald-600/80', 'border-emerald-400', 'text-white', 'scale-[1.02]');
+
+                    this.correctCount++;
+                    this.streak++;
+                    if (this.streak > this.maxStreak) this.maxStreak = this.streak;
+
+                    // Score calculation: Base 100 + Time Bonus + Streak Bonus
+                    let points = 100 + (this.timeLeft * 10) + (this.streak > 1 ? this.streak * 20 : 0);
+                    if (this.doublePointsActive) points *= 2;
+
+                    this.score += points;
+                    this.updateStreakUI();
+
+                } else {
+                    // WRONG ANSWER
+                    sound.playWrong();
+                    if (selectedIndex !== null) {
+                        buttons[selectedIndex].classList.remove('glass-panel');
+                        buttons[selectedIndex].classList.add('bg-rose-600/80', 'border-rose-400', 'text-white');
+                    }
+                    
+                    // Highlight correct answer
+                    buttons[qData.correct].classList.remove('glass-panel');
+                    buttons[qData.correct].classList.add('bg-emerald-600/80', 'border-emerald-400', 'text-white');
+
+                    this.streak = 0;
+                    this.updateStreakUI();
+                }
+
+                // Advance to next question after delay
+                setTimeout(() => {
+                    this.currentIndex++;
+                    this.loadQuestion();
+                }, 1600);
+            }
+
+            handleTimeOut() {
+                this.handleAnswer(null);
+            }
+
+            updateStreakUI() {
+                const container = document.getElementById('streak-container');
+                const text = document.getElementById('streak-text');
+
+                if (this.streak >= 2) {
+                    text.innerText = `${this.streak}x Streak!`;
+                    container.classList.remove('opacity-0');
+                } else {
+                    container.classList.add('opacity-0');
+                }
+            }
+
+            endGame() {
+                // Save Statistics
+                this.stats.gamesPlayed++;
+                if (this.score > this.stats.highScore) {
+                    this.stats.highScore = this.score;
+                }
+
+                const accuracy = Math.round((this.correctCount / this.questions.length) * 100);
+
+                // Add score to leaderboard
+                this.stats.leaderboard.push({
+                    score: this.score,
+                    category: this.getCategoryName(this.currentCategory),
+                    date: new Date().toLocaleDateString(),
+                    accuracy: accuracy
+                });
+
+                // Sort and keep top 10
+                this.stats.leaderboard.sort((a, b) => b.score - a.score);
+                this.stats.leaderboard = this.stats.leaderboard.slice(0, 10);
+
+                localStorage.setItem('bq_stats', JSON.stringify(this.stats));
+
+                // Populate Results Screen
+                document.getElementById('result-score').innerText = this.score;
+                document.getElementById('result-accuracy').innerText = `${accuracy}%`;
+                document.getElementById('result-streak').innerText = `${this.maxStreak}x`;
+
+                const title = document.getElementById('result-title');
+                const subtitle = document.getElementById('result-subtitle');
+                const icon = document.getElementById('result-icon');
+
+                if (accuracy >= 80) {
+                    title.innerText = "Mastermind Status!";
+                    subtitle.innerText = "Unbelievable performance! You really know your stuff.";
+                    icon.className = "fa-solid fa-crown text-5xl text-brand-yellow animate-bounce";
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                } else if (accuracy >= 50) {
+                    title.innerText = "Solid Round!";
+                    subtitle.innerText = "Good job! A little practice and you'll hit a perfect score.";
+                    icon.className = "fa-solid fa-trophy text-5xl text-brand-cyan";
+                } else {
+                    title.innerText = "Keep Practicing!";
+                    subtitle.innerText = "Don't give up! Try again to boost your score.";
+                    icon.className = "fa-solid fa-brain text-5xl text-brand-purple";
+                }
+
+                this.showScreen('screen-result');
+            }
+
+            restartQuiz() {
+                if (this.currentCategory) {
+                    this.startCategory(this.currentCategory);
+                } else {
+                    this.showHome();
+                }
+            }
+
+            getCategoryName(key) {
+                const map = { pop: 'Pop Culture', science: 'Science', mind: 'Mind Benders', riddles: 'Riddles' };
+                return map[key] || 'Trivia';
+            }
+
+            showLeaderboard() {
+                const container = document.getElementById('leaderboard-list');
+                container.innerHTML = '';
+
+                if (this.stats.leaderboard.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-slate-500 text-sm">
+                            No high scores recorded yet. Complete a quiz to get ranked!
+                        </div>
+                    `;
+                } else {
+                    this.stats.leaderboard.forEach((item, index) => {
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center justify-between p-3 rounded-xl bg-slate-800/60 border border-slate-700/50 text-sm';
+                        
+                        let rankBadge = `<span class="w-6 font-bold text-slate-400">#${index + 1}</span>`;
+                        if (index === 0) rankBadge = `<span class="w-6 text-brand-yellow font-bold"><i class="fa-solid fa-crown"></i></span>`;
+                        else if (index === 1) rankBadge = `<span class="w-6 text-slate-300 font-bold"><i class="fa-solid fa-medal"></i></span>`;
+                        else if (index === 2) rankBadge = `<span class="w-6 text-amber-600 font-bold"><i class="fa-solid fa-award"></i></span>`;
+
+                        row.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                ${rankBadge}
+                                <div>
+                                    <div class="font-semibold text-white">${item.category}</div>
+                                    <div class="text-[10px] text-slate-400">${item.date} • ${item.accuracy}% Accuracy</div>
+                                </div>
+                            </div>
+                            <span class="font-heading font-bold text-brand-yellow">${item.score} pts</span>
+                        `;
+                        container.appendChild(row);
+                    });
+                }
+
+                this.showScreen('screen-leaderboard');
+            }
+
+            clearLeaderboard() {
+                if (confirm("Are you sure you want to reset all score history?")) {
+                    this.stats.leaderboard = [];
+                    this.stats.highScore = 0;
+                    this.stats.gamesPlayed = 0;
+                    localStorage.setItem('bq_stats', JSON.stringify(this.stats));
+                    this.showLeaderboard();
+                    this.updateHomeStats();
+                }
+            }
+        }
+
+        // Initialize Game Instance
+        const game = new TriviaGame();
+    </script>
+</body>
+</html>
